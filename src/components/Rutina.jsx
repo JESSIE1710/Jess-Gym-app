@@ -59,9 +59,9 @@ useEffect(() => {
                 
             {/* Columna MÁQUINA */}
             <td style={estilos.celdaCuerpo}>
-            {ej.imgM ? (
+            {ej.imgMaquina ? (
                 <img 
-                src={ej.imgM} 
+                src={ej.imgMaquina} 
                 alt="ejercicio"
                 style={{width:'150px', height:'150px', borderRadius:'10px', objectFit:'cover'}} />
             ) : (
@@ -71,9 +71,9 @@ useEffect(() => {
 
             {/* Columna LIBRE */}
             <td style={estilos.celdaCuerpo}>
-            {ej.imgL ? (
+            {ej.imgLibre ? (
                 <img 
-                src={ej.imgL} 
+                src={ej.imgLibre} 
                 alt="ejercicio"
                 style={{width:'150px', height:'150px', borderRadius:'10px', objectFit:'cover'}}/>
                 ) : (
