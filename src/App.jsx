@@ -424,7 +424,17 @@ function App() {
         </button>
       </div>
 
-      <h1 style={estilos.tituloApp}>Jess-Gym Rutinas ⚡</h1>
+      <h1 style={estilos.tituloApp}>Jess-Gym</h1>
+      <button 
+        onClick={() => {
+          setCatalogo(catalogoInicial);
+          syncPerfil(rutinas, catalogoInicial, notasPorEjercicio);
+          alert('¡Catálogo y fotos forzados con éxito! 🎉');
+        }} 
+        style={{backgroundColor: '#ef4444', color: 'white', padding: '15px 20px', borderRadius: '10px', fontWeight: 'bold', marginBottom: '20px', border: 'none', cursor: 'pointer', width: '100%', maxWidth: '500px'}}
+      >
+        💥 FORZAR CATÁLOGO NUEVO 💥
+      </button>
 
       <div style={estilos.menuPrincipal}>
         <button style={{...estilos.botonMenu, backgroundColor: vistaPrincipal === 'rutina' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'rutina' ? 'white' : '#94a3b8'}} onClick={() => setVistaPrincipal('rutina')}>🏋️‍♀️ RUTINA</button>
