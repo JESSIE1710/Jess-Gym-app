@@ -425,23 +425,7 @@ function App() {
       </div>
 
       <h1 style={estilos.tituloApp}>Jess-Gym</h1>
-{/* En App.jsx, busca el botón de FORZAR CATÁLOGO NUEVO */}
-      <button 
-        onClick={() => {
-          // Hack de admin: Usamos una variable local directamente
-          // para asegurarnos de que Firebase reciba las rutas de las fotos 
-          // sin esperar a que React se actualice.
-          const catalogoLimpioYConFotos = catalogoInicial; 
-          
-          setCatalogo(catalogoLimpioYConFotos); // Actualizamos la pantalla
-          syncPerfil(rutinas, catalogoLimpioYConFotos, notasPorEjercicio); // Guardamos en base de datos
-          
-          alert('¡Catálogo y fotos forzados con éxito! 🎉 Por favor, recarga esta pestaña para ver los cambios.');
-        }} 
-        style={{backgroundColor: '#ef4444', color: 'white', padding: '15px 20px', borderRadius: '10px', fontWeight: 'bold', marginBottom: '20px', border: 'none', cursor: 'pointer', width: '100%', maxWidth: '500px'}}
-      >
-        💥 FORZAR CATÁLOGO NUEVO 💥
-      </button>
+
 
       <div style={estilos.menuPrincipal}>
         <button style={{...estilos.botonMenu, backgroundColor: vistaPrincipal === 'rutina' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'rutina' ? 'white' : '#94a3b8'}} onClick={() => setVistaPrincipal('rutina')}>🏋️‍♀️ RUTINA</button>
