@@ -1,0 +1,17 @@
+{
+  "name": "Jess-Gym ⚡",
+  "short_name": "JG Gym",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "description": "Tu registro personal de entrenamiento de fuerza.",
+  "icons": [
+    {
+      "src": "JG-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
