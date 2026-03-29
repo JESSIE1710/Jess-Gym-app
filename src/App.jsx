@@ -374,7 +374,7 @@ function App() {
       <div style={{backgroundColor:'#1e293b', padding:'40px 30px', borderRadius:'20px', textAlign:'center', width:'90%', maxWidth:'400px', border:'1px solid #334155'}}>
         {/* LA IMAGEN: Para que funcione, tienes que tener un archivo llamado "logo.png" (en minúsculas) 
             dentro de la carpeta "public" de tu proyecto */}
-            <h1 style={estilos.tituloApp}>   ⚡Jess-Gym-App ⚡</h1>
+            <h1 style={estilos.tituloApp}> ⚡Jess-Gym-App ⚡</h1>
         <img 
             src="logo.png" 
             alt="Si ves esto, es que te falta subir el archivo logo.png a la carpeta public" 
@@ -425,11 +425,18 @@ function App() {
       </div>
 
       <h1 style={estilos.tituloApp}>Jess-Gym</h1>
+{/* En App.jsx, busca el botón de FORZAR CATÁLOGO NUEVO */}
       <button 
         onClick={() => {
-          setCatalogo(catalogoInicial);
-          syncPerfil(rutinas, catalogoInicial, notasPorEjercicio);
-          alert('¡Catálogo y fotos forzados con éxito! 🎉');
+          // Hack de admin: Usamos una variable local directamente
+          // para asegurarnos de que Firebase reciba las rutas de las fotos 
+          // sin esperar a que React se actualice.
+          const catalogoLimpioYConFotos = catalogoInicial; 
+          
+          setCatalogo(catalogoLimpioYConFotos); // Actualizamos la pantalla
+          syncPerfil(rutinas, catalogoLimpioYConFotos, notasPorEjercicio); // Guardamos en base de datos
+          
+          alert('¡Catálogo y fotos forzados con éxito! 🎉 Por favor, recarga esta pestaña para ver los cambios.');
         }} 
         style={{backgroundColor: '#ef4444', color: 'white', padding: '15px 20px', borderRadius: '10px', fontWeight: 'bold', marginBottom: '20px', border: 'none', cursor: 'pointer', width: '100%', maxWidth: '500px'}}
       >
