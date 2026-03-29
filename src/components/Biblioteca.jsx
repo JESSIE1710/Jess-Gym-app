@@ -202,6 +202,8 @@ export default function Biblioteca({
             </tr>
           </thead>
           <tbody>
+           {/* --- CORTA Y PEGA ESTE BLOQUE CORREGIDO DENTRO DE <tbody> EN BIBLIOTECA.JSX --- */}
+
             {catalogo.map((ej, index) => (
               <tr key={ej.id}>
                 
@@ -214,15 +216,15 @@ export default function Biblioteca({
                 </td>
                 
                 <td style={estilos.celdaCuerpo}>
-                  {/* 🎨 AQUÍ APLICAMOS LA FUNCIÓN DE COLORES A TU SPAN */}
                   <span style={obtenerEstiloCategoria(ej.categoria)}>
                     {ej.categoria}
                   </span>
                 </td>
                 
                 <td style={estilos.celdaCuerpo}>
-                  {ej.imgM ? (
-                    <img src={ej.imgM} 
+                  {/* 👇 CORRECCIÓN AQUÍ: Leemos 'imgMaquina' 👇 */}
+                  {ej.imgMaquina ? (
+                    <img src={ej.imgMaquina} 
                     alt="Máquina" 
                     style={{width:'80px', height:'80px', borderRadius:'8px', objectFit:'cover', border: '1px solid #334155'}} />
                   ) : (
@@ -231,8 +233,9 @@ export default function Biblioteca({
                 </td>
 
                 <td style={estilos.celdaCuerpo}>
-                  {ej.imgL ? (
-                    <img src={ej.imgL} 
+                  {/* 👇 CORRECCIÓN AQUÍ: Leemos 'imgLibre' 👇 */}
+                  {ej.imgLibre ? (
+                    <img src={ej.imgLibre} 
                     alt="Libre" 
                     style={{width:'80px', height:'80px', borderRadius:'8px', objectFit:'cover', border: '1px solid #334155'}} />
                   ) : (
@@ -260,6 +263,7 @@ export default function Biblioteca({
                 </td>
               </tr>
             ))}
+{/* --- FIN DEL CORTA Y PEGA --- */}
           </tbody>
         </table>
       </div>
