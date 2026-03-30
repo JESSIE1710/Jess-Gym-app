@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, auth, googleProvider } from './firebase'; 
+import { db, auth, googleProvider } from './firebase';
 import { collection, addDoc, getDocs, query, where, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'; // 👈 Añadido signOut
 import Progreso from './components/Progreso';
@@ -12,22 +12,22 @@ const rutinasIniciales = { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Vi
 
 const catalogoInicial = [
   // 🦵 PIERNAS Y GLÚTEOS (Fuerza) - Fíjate que les he puesto un / al principio de la ruta
-  { id: 'c1', nombre: 'Sentadillas', categoria: 'Piernas', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/sentadilla-maquina.gif', imgLibre: '/ejercicios/sentadilla-libre.gif'},
+  { id: 'c1', nombre: 'Sentadillas', categoria: 'Piernas', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/sentadilla-maquina.gif', imgLibre: '/ejercicios/sentadilla-libre.gif' },
   { id: 'c2', nombre: 'Prensa de Piernas', categoria: 'Piernas', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/prensa-piernas-maquina.gif', imgLibre: null },
   { id: 'c3', nombre: 'Hip Thrust', categoria: 'Glúteos', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/hip-trust-maquina.gif', imgLibre: '/ejercicios/hip-trust-libre.gif' },
   { id: 'c4', nombre: 'Peso Muerto Rumano', categoria: 'Glúteos', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/peso-muerto-maquina.gif', imgLibre: '/ejercicios/peso-muerto-libre.gif' },
-  
+
   // 🔙 TREN SUPERIOR (Fuerza)
   { id: 'c5', nombre: 'Jalón al pecho', categoria: 'Espalda', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/jalon-pecho-maquina.webp', imgLibre: '/ejercicios/jalon-pecho-libre.gif' },
   { id: 'c6', nombre: 'Press de Banca', categoria: 'Pecho', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/pressbanca-maquina.gif', imgLibre: '/ejercicios/press-banca-libre.gif' },
   { id: 'c7', nombre: 'Curl de Bíceps', categoria: 'Brazos', tipoMedicion: 'Fuerza', imgMaquina: '/ejercicios/curl-biceps-maquina.gif', imgLibre: '/ejercicios/curl-biceps-libre.gif' },
-  
+
   // 🏃‍♀️ CARDIO (Camaleón Cardio)
   { id: 'c8', nombre: 'Cinta de correr', categoria: 'Cardio', tipoMedicion: 'Cardio', imgMaquina: '/ejercicios/cinta-correr-maquina.gif', imgLibre: null },
   { id: 'c9', nombre: 'Bicicleta Estática', categoria: 'Cardio', tipoMedicion: 'Cardio', imgMaquina: '/ejercicios/bicicleta-estatica-maquina.gif', imgLibre: null },
-  
+
   // 🧘‍♀️ CORE / ABDOMEN (Camaleón Peso Corporal)
-  { id: 'c10', nombre: 'Plancha (Plank)', categoria: 'Core', tipoMedicion: 'Peso Corporal', imgMaquina: null, imgLibre: '/ejercicios/plancha-libre.gif'},
+  { id: 'c10', nombre: 'Plancha (Plank)', categoria: 'Core', tipoMedicion: 'Peso Corporal', imgMaquina: null, imgLibre: '/ejercicios/plancha-libre.gif' },
   { id: 'c11', nombre: 'Crunches (Abdomen)', categoria: 'Core', tipoMedicion: 'Peso Corporal', imgMaquina: null, imgLibre: '/ejercicios/crunches-libre.gif' }
 ];
 const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -65,7 +65,7 @@ const COLORES_DONUT = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#
 const formatoFechaSegura = (fechaString) => {
   if (!fechaString) return 'Sin fecha';
   const d = new Date(fechaString);
-  return isNaN(d.getTime()) ? 'Sin fecha' : d.toLocaleDateString('es-ES', { day:'2-digit', month:'short' });
+  return isNaN(d.getTime()) ? 'Sin fecha' : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 };
 
 function App() {
@@ -86,6 +86,38 @@ function App() {
   const [apodo, setApodo] = useState('');
   const [editandoApodo, setEditandoApodo] = useState(false);
   const [inputApodo, setInputApodo] = useState('');
+  // 💎 NUEVOS ESTADOS PARA EL CONTROL DE PESO EN PROGRESO 💎
+  const [inputMetaPeso, setInputMetaPeso] = useState('');
+  const [inputFechaPeso, setInputFechaPeso] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // ⚖️ FUNCIÓN PARA REGISTRAR PESO (CON LA "MÁQUINA DEL TIEMPO")
+  const registrarPeso = async () => {
+    if (!inputPesoActual || !inputFechaPeso) return;
+    // Usamos T12:00:00 para que el cambio de zona horaria no nos mueva el día
+    const fechaElegida = new Date(inputFechaPeso + 'T12:00:00').toISOString();
+    const n = {
+      userId: usuario.uid,
+      peso: parseFloat(inputPesoActual),
+      fecha: fechaElegida,
+      esObjetivo: false
+    };
+    try {
+      const docRef = await addDoc(collection(db, "pesoCorporal"), n);
+      setHistorialPeso(prev => [...prev, { id: docRef.id, ...n }].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)));
+      setInputPesoActual(''); // Limpiamos el input después de guardar
+    } catch (e) { console.error("Error al registrar peso:", e); }
+  };
+
+  // 🎯 FUNCIÓN PARA ACTUALIZAR LA META
+  const actualizarMeta = async () => {
+    if (!inputMetaPeso) return;
+    const f = new Date().toISOString();
+    try {
+      await addDoc(collection(db, "pesoCorporal"), { userId: usuario.uid, peso: parseFloat(inputMetaPeso), fecha: f, esObjetivo: true });
+      setMetaPeso(parseFloat(inputMetaPeso));
+      setInputMetaPeso('');
+    } catch (e) { console.error("Error al fijar meta:", e); }
+  };
 
   // ⏱️ Motor del cronómetro
   useEffect(() => {
@@ -100,7 +132,7 @@ function App() {
     }
     return () => clearInterval(timer);
   }, [segundos]);
-  
+
   // Estados de formularios
   const [mostrarCreador, setMostrarCreador] = useState(false);
   const [nuevoEj, setNuevoEj] = useState({ nombre: '', categoria: 'Piernas', imgM: null, imgL: null, tipoMedicion: 'Fuerza' });
@@ -113,7 +145,7 @@ function App() {
   const [diaParaCopiar, setDiaParaCopiar] = useState('');
   const [ejercicioFuerzaSel, setEjercicioFuerzaSel] = useState('');
   const [inputPesoActual, setInputPesoActual] = useState('');
-  const opcionesDescanso = []; for (let i = 20; i <= 240; i += 20) opcionesDescanso.push({ valor: i, texto: i < 60 ? `${i}s` : `${Math.floor(i/60)}m ${i%60||''}s` });
+  const opcionesDescanso = []; for (let i = 20; i <= 240; i += 20) opcionesDescanso.push({ valor: i, texto: i < 60 ? `${i}s` : `${Math.floor(i / 60)}m ${i % 60 || ''}s` });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -140,11 +172,11 @@ function App() {
         const sSnap = await getDocs(qS);
         const sData = []; sSnap.forEach(d => sData.push({ id: d.id, ...d.data() }));
         setSeriesGuardadas(sData);
-        
+
         const qP = query(collection(db, "pesoCorporal"), where("userId", "==", usuario.uid));
         const pSnapPeso = await getDocs(qP);
         const pData = []; pSnapPeso.forEach(d => pData.push({ id: d.id, ...d.data() }));
-        setHistorialPeso(pData.filter(p => !p.esObjetivo).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)));
+        setHistorialPeso(pData.filter(p => !p.esObjetivo).sort((a, b) => new Date(a.fecha) - new Date(b.fecha)));
         const obj = pData.find(p => p.esObjetivo); if (obj) setMetaPeso(obj.peso);
       } catch (e) { console.error(e); } finally { setCargandoPerfil(false); }
     };
@@ -152,7 +184,7 @@ function App() {
   }, [usuario]);
 
   const syncPerfil = async (r, c, n) => {
-    try { await setDoc(doc(db, "perfiles", usuario.uid), { rutinas: r, catalogo: c, notas: n || notasPorEjercicio }, { merge: true }); } catch (e) {}
+    try { await setDoc(doc(db, "perfiles", usuario.uid), { rutinas: r, catalogo: c, notas: n || notasPorEjercicio }, { merge: true }); } catch (e) { }
   };
 
   // 💎 FUNCIONES DE PERFIL Y SESIÓN 💎
@@ -176,7 +208,7 @@ function App() {
     const ej = catalogo.find(c => c.id === ejercicioSeleccionadoCatalogo);
     const nr = { ...rutinas, [diaActual]: [...(rutinas[diaActual] || []), { ...ej, id: Date.now().toString() }] };
     setRutinas(nr); syncPerfil(nr, catalogo); setEjercicioSeleccionadoCatalogo('');
-  }; 
+  };
 
   const copiarRutina = () => {
     if (!diaParaCopiar || !rutinas[diaParaCopiar]) return;
@@ -190,12 +222,12 @@ function App() {
         nuevaRutinaDelDia = [...(rutinas[diaActual] || []), ...copia];
       }
     } else {
-      nuevaRutinaDelDia = copia; 
+      nuevaRutinaDelDia = copia;
     }
     const nr = { ...rutinas, [diaActual]: nuevaRutinaDelDia };
-    setRutinas(nr); 
-    syncPerfil(nr, catalogo); 
-    setDiaParaCopiar(''); 
+    setRutinas(nr);
+    syncPerfil(nr, catalogo);
+    setDiaParaCopiar('');
   };
 
   const vaciarDia = () => {
@@ -207,22 +239,33 @@ function App() {
 
   const moverEjercicio = (idx, dir) => {
     const arr = [...(rutinas[diaActual] || [])];
-    if (dir === 'arriba' && idx > 0) [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
-    else if (dir === 'abajo' && idx < arr.length - 1) [arr[idx+1], arr[idx]] = [arr[idx], arr[idx+1]];
+    if (dir === 'arriba' && idx > 0) [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+    else if (dir === 'abajo' && idx < arr.length - 1) [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
     const nr = { ...rutinas, [diaActual]: arr }; setRutinas(nr); syncPerfil(nr, catalogo);
   };
 
   const guardarEnCatalogo = (ejercicioFinal) => {
     if (!ejercicioFinal || !ejercicioFinal.nombre) return;
+
+
+    const ejercicioCorregido = {
+      ...ejercicioFinal,
+      imgMaquina: ejercicioFinal.imgM || ejercicioFinal.imgMaquina || null,
+      imgLibre: ejercicioFinal.imgL || ejercicioFinal.imgLibre || null,
+    };
+
     let nuevoCatalogo;
-    if (ejercicioFinal.id) {
-      nuevoCatalogo = catalogo.map(ejViejo => ejViejo.id === ejercicioFinal.id ? ejercicioFinal : ejViejo);
+    if (ejercicioCorregido.id) {
+      // Si ya existía, lo actualiza
+      nuevoCatalogo = catalogo.map(ejViejo => ejViejo.id === ejercicioCorregido.id ? ejercicioCorregido : ejViejo);
     } else {
-      nuevoCatalogo = [...(catalogo || []), { ...ejercicioFinal, id: Date.now().toString() }];
+      // Si es nuevo, lo añade a la lista
+      nuevoCatalogo = [...(catalogo || []), { ...ejercicioCorregido, id: Date.now().toString() }];
     }
-    setCatalogo(nuevoCatalogo); 
+
+    setCatalogo(nuevoCatalogo);
     syncPerfil(rutinas, nuevoCatalogo);
-    setNuevoEj({ nombre: '', categoria: 'Piernas', imgM: null, imgL: null, tipoMedicion: 'Fuerza' }); 
+    setNuevoEj({ nombre: '', categoria: 'Piernas', imgM: null, imgL: null, tipoMedicion: 'Fuerza' });
     setMostrarCreador(false);
   };
 
@@ -236,28 +279,28 @@ function App() {
       modalidad: modalidadActual,
       fechaPersonalizada: new Date().toISOString().split('T')[0]
     };
-    const fechaParaGuardar = datosFinales.fechaPersonalizada 
-      ? `${datosFinales.fechaPersonalizada}T12:00:00.000Z` 
+    const fechaParaGuardar = datosFinales.fechaPersonalizada
+      ? `${datosFinales.fechaPersonalizada}T12:00:00.000Z`
       : new Date().toISOString();
 
-    const n = { 
-      ejercicio: ejercicioActivo.nombre, 
+    const n = {
+      ejercicio: ejercicioActivo.nombre,
       peso: datosFinales.peso,
       reps: datosFinales.reps,
       descanso: datosFinales.descanso,
       modalidad: datosFinales.modalidad,
       inclinacion: datosFinales.inclinacion || null,
-      fechaAlta: fechaParaGuardar, 
-      userId: usuario.uid 
+      fechaAlta: fechaParaGuardar,
+      userId: usuario.uid
     };
 
     try {
       const docRef = await addDoc(collection(db, "series"), n);
       setSeriesGuardadas([...seriesGuardadas, { id: docRef.id, ...n }]);
       if (datosFinales.descanso > 0) {
-        setSegundos(parseInt(datosFinales.descanso)); 
+        setSegundos(parseInt(datosFinales.descanso));
       }
-    } catch(e) {
+    } catch (e) {
       console.error("Error al guardar:", e);
     }
   };
@@ -288,8 +331,8 @@ function App() {
   };
 
   const prepararEdicion = (ejercicio) => {
-    setNuevoEj(ejercicio); 
-    setMostrarCreador(true); 
+    setNuevoEj(ejercicio);
+    setMostrarCreador(true);
   };
 
   const finalizarEjercicio = () => {
@@ -314,41 +357,41 @@ function App() {
     .reduce((acc, s) => {
       const dayIso = new Date(s.fechaAlta).toISOString().split('T')[0];
       const ex = acc.find(i => i.day === dayIso);
-      if (ex) { if (s.peso > ex.p) ex.p = s.peso; } 
+      if (ex) { if (s.peso > ex.p) ex.p = s.peso; }
       else acc.push({ day: dayIso, p: s.peso }); return acc;
     }, []);
 
   const datosFuerza = datosFuerzaTemp
-    .sort((a,b) => new Date(a.day) - new Date(b.day))
-    .map(i => ({ 
-      fecha: i.day, 
-      p: i.p 
+    .sort((a, b) => new Date(a.day) - new Date(b.day))
+    .map(i => ({
+      fecha: i.day,
+      p: i.p
     }));
 
   const datosConsistencia = [...(seriesGuardadas || [])]
     .sort((a, b) => new Date(a.fechaAlta) - new Date(b.fechaAlta))
     .reduce((acc, s) => {
       const f = formatoFechaSegura(s.fechaAlta);
-      const ex = acc.find(i => i.f === f); 
-      if (ex) ex.s += 1; 
-      else acc.push({ f, s: 1 }); 
+      const ex = acc.find(i => i.f === f);
+      if (ex) ex.s += 1;
+      else acc.push({ f, s: 1 });
       return acc;
     }, [])
     .slice(-7);
 
-  const datosPesoGrafico = (historialPeso || []) 
-    .filter(s => s.esObjetivo === false) 
+  const datosPesoGrafico = (historialPeso || [])
+    .filter(s => s.esObjetivo === false)
     .reduce((acc, s) => {
-        const fechaCruda = s.fecha || s.fechaAlta || new Date().toISOString();
-        const dayIso = new Date(fechaCruda).toISOString().split('T')[0];
-        const ex = acc.find(i => i.day === dayIso);
-        if (ex) { if (s.peso > ex.p) ex.p = s.peso; } 
-        else acc.push({ day: dayIso, p: s.peso }); return acc;
+      const fechaCruda = s.fecha || s.fechaAlta || new Date().toISOString();
+      const dayIso = new Date(fechaCruda).toISOString().split('T')[0];
+      const ex = acc.find(i => i.day === dayIso);
+      if (ex) { if (s.peso > ex.p) ex.p = s.peso; }
+      else acc.push({ day: dayIso, p: s.peso }); return acc;
     }, [])
-    .sort((a,b) => new Date(a.day) - new Date(b.day))
-    .map(i => ({ 
-        fecha: i.day, 
-        peso: i.p 
+    .sort((a, b) => new Date(a.day) - new Date(b.day))
+    .map(i => ({
+      fecha: i.day,
+      peso: i.p
     }));
 
   const eliminarRegistroPeso = async (idRegistro) => {
@@ -361,6 +404,11 @@ function App() {
     }
   };
 
+
+
+
+
+
   const datosDonut = (seriesGuardadas || []).reduce((acc, s) => {
     const cat = (catalogo || []).find(c => c.nombre === s.ejercicio)?.categoria || 'Otros';
     const ex = acc.find(i => i.name === cat); if (ex) ex.value += 1; else acc.push({ name: cat, value: 1 }); return acc;
@@ -368,20 +416,20 @@ function App() {
 
   // 💎 PANTALLA DE INICIO (LOG IN) CON EL LOGO 💎
   if (!usuario) return (
-    <div style={{...estilos.contenedorPrincipal, justifyContent: 'center'}}>
-              
+    <div style={{ ...estilos.contenedorPrincipal, justifyContent: 'center' }}>
 
-      <div style={{backgroundColor:'#1e293b', padding:'40px 30px', borderRadius:'20px', textAlign:'center', width:'90%', maxWidth:'400px', border:'1px solid #334155'}}>
+
+      <div style={{ backgroundColor: '#1e293b', padding: '40px 30px', borderRadius: '20px', textAlign: 'center', width: '90%', maxWidth: '400px', border: '1px solid #334155' }}>
         {/* LA IMAGEN: Para que funcione, tienes que tener un archivo llamado "logo.png" (en minúsculas) 
             dentro de la carpeta "public" de tu proyecto */}
-            <h1 style={estilos.tituloApp}> ⚡Jess-Gym-App ⚡</h1>
-        <img 
-            src="logo.png" 
-            alt="Si ves esto, es que te falta subir el archivo logo.png a la carpeta public" 
-            style={{width: '220px', height: '220px', borderRadius: '30px', marginBottom: '30px', objectFit: 'cover'}} 
+        <h1 style={estilos.tituloApp}> ⚡Jess-Gym-App ⚡</h1>
+        <img
+          src="logo.png"
+          alt="Si ves esto, es que te falta subir el archivo logo.png a la carpeta public"
+          style={{ width: '220px', height: '220px', borderRadius: '30px', marginBottom: '30px', objectFit: 'cover' }}
         />
-        <h6 style={estilos.mensajeAppTitulo}>¿List@ para entrenar?</h6> 
-        <button onClick={() => signInWithPopup(auth, googleProvider)} style={{...estilos.botonActivo, width: '100%', padding: '15px', borderRadius: '12px', fontSize: '20px', fontWeight: 'bold', marginTop: '10px'}}>
+        <h6 style={estilos.mensajeAppTitulo}>¿List@ para entrenar?</h6>
+        <button onClick={() => signInWithPopup(auth, googleProvider)} style={{ ...estilos.botonActivo, width: '100%', padding: '15px', borderRadius: '12px', fontSize: '20px', fontWeight: 'bold', marginTop: '10px' }}>
           Entrar con Google
         </button>
       </div>
@@ -392,34 +440,34 @@ function App() {
     <div style={estilos.contenedorPrincipal}>
 
       {/* 💎 BARRA SUPERIOR DE PERFIL (FOTO, NOMBRE Y CERRAR SESIÓN) 💎 */}
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1000px', marginBottom: '15px', backgroundColor: '#1e293b', padding: '12px 20px', borderRadius: '15px', border: '1px solid #334155', boxSizing: 'border-box'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-          <img src={usuario.photoURL || 'https://via.placeholder.com/45'} alt="Perfil" style={{width: '45px', height: '45px', borderRadius: '50%', border: '2px solid #3b82f6'}} />
-          
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1000px', marginBottom: '15px', backgroundColor: '#1e293b', padding: '12px 20px', borderRadius: '15px', border: '1px solid #334155', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <img src={usuario.photoURL || 'https://via.placeholder.com/45'} alt="Perfil" style={{ width: '45px', height: '45px', borderRadius: '50%', border: '2px solid #3b82f6' }} />
+
           {editandoApodo ? (
-            <div style={{display: 'flex', gap: '8px'}}>
-              <input 
-                value={inputApodo} 
-                onChange={e => setInputApodo(e.target.value)} 
-                style={{...estilos.inputRegistrar, marginBottom: 0, padding: '8px 12px', width: '140px', fontSize: '14px'}} 
-                autoFocus 
-                placeholder="Tu apodo..." 
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={inputApodo}
+                onChange={e => setInputApodo(e.target.value)}
+                style={{ ...estilos.inputRegistrar, marginBottom: 0, padding: '8px 12px', width: '140px', fontSize: '14px' }}
+                autoFocus
+                placeholder="Tu apodo..."
               />
-              <button onClick={guardarApodo} style={{background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', fontWeight: 'bold', cursor: 'pointer'}}>✓</button>
+              <button onClick={guardarApodo} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px', fontWeight: 'bold', cursor: 'pointer' }}>✓</button>
             </div>
           ) : (
-            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-              <span style={{fontWeight: 'bold', color: 'white', fontSize: '18px'}}>{apodo || usuario.displayName?.split(' ')[0] || 'Atleta'}</span>
-              <button 
-                onClick={() => {setInputApodo(apodo || usuario.displayName?.split(' ')[0] || ''); setEditandoApodo(true);}} 
-                style={{background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px'}} 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontWeight: 'bold', color: 'white', fontSize: '18px' }}>{apodo || usuario.displayName?.split(' ')[0] || 'Atleta'}</span>
+              <button
+                onClick={() => { setInputApodo(apodo || usuario.displayName?.split(' ')[0] || ''); setEditandoApodo(true); }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px' }}
                 title="Editar nombre"
               >✏️</button>
             </div>
           )}
         </div>
-        
-        <button onClick={cerrarSesion} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '10px 15px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px'}}>
+
+        <button onClick={cerrarSesion} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '10px 15px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>
           Salir
         </button>
       </div>
@@ -428,9 +476,9 @@ function App() {
 
 
       <div style={estilos.menuPrincipal}>
-        <button style={{...estilos.botonMenu, backgroundColor: vistaPrincipal === 'rutina' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'rutina' ? 'white' : '#94a3b8'}} onClick={() => setVistaPrincipal('rutina')}>🏋️‍♀️ RUTINA</button>
-        <button style={{...estilos.botonMenu, backgroundColor: vistaPrincipal === 'biblioteca' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'biblioteca' ? 'white' : '#94a3b8'}} onClick={() => setVistaPrincipal('biblioteca')}>📚 BIBLIOTECA</button>
-        <button style={{...estilos.botonMenu, backgroundColor: vistaPrincipal === 'progreso' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'progreso' ? 'white' : '#94a3b8'}} onClick={() => setVistaPrincipal('progreso')}>📈 PROGRESO</button>
+        <button style={{ ...estilos.botonMenu, backgroundColor: vistaPrincipal === 'rutina' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'rutina' ? 'white' : '#94a3b8' }} onClick={() => setVistaPrincipal('rutina')}>🏋️‍♀️ RUTINA</button>
+        <button style={{ ...estilos.botonMenu, backgroundColor: vistaPrincipal === 'biblioteca' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'biblioteca' ? 'white' : '#94a3b8' }} onClick={() => setVistaPrincipal('biblioteca')}>📚 BIBLIOTECA</button>
+        <button style={{ ...estilos.botonMenu, backgroundColor: vistaPrincipal === 'progreso' ? '#3b82f6' : 'transparent', color: vistaPrincipal === 'progreso' ? 'white' : '#94a3b8' }} onClick={() => setVistaPrincipal('progreso')}>📈 PROGRESO</button>
       </div>
 
       {vistaPrincipal === 'rutina' && (
@@ -468,11 +516,11 @@ function App() {
           estilos={estilos}
           eliminarDelCatalogo={eliminarDelCatalogo}
           prepararEdicion={prepararEdicion}
-        />   
+        />
       )}
 
       {ejercicioActivo && (
-        <RegistrarEntrenamiento 
+        <RegistrarEntrenamiento
           ejercicio={ejercicioActivo}
           peso={pesoActual}
           setPeso={setPesoActual}
@@ -498,8 +546,8 @@ function App() {
 
       {vistaPrincipal === 'progreso' && (
         <Progreso
-          historialPeso={datosPesoGrafico} 
-          pesoCorporalData={historialPeso} 
+          historialPeso={datosPesoGrafico}
+          pesoCorporalData={historialPeso}
           metaPeso={metaPeso}
           inputPesoActual={inputPesoActual}
           setInputPesoActual={setInputPesoActual}
@@ -516,18 +564,26 @@ function App() {
           COLORES_DONUT={COLORES_DONUT}
           seriesGuardadas={seriesGuardadas}
           eliminarRegistroPeso={eliminarRegistroPeso}
+          inputMetaPeso={inputMetaPeso}
+          setInputMetaPeso={setInputMetaPeso}
+          inputFechaPeso={inputFechaPeso}
+          setInputFechaPeso={setInputFechaPeso}
+          registrarPeso={registrarPeso}
+          actualizarMeta={actualizarMeta}
+
+  
         />
       )}
 
       {segundos > 0 && (
-        <div 
+        <div
           style={{
             position: 'fixed', bottom: '100px', right: '20px', width: '65px', height: '65px',
-            backgroundColor: segundos < 10 ? '#ef4444' : '#3b82f6', borderRadius: '50%', 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+            backgroundColor: segundos < 10 ? '#ef4444' : '#3b82f6', borderRadius: '50%',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             color: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.5)', zIndex: 9999, border: '3px solid white'
-          }} 
-          onClick={() => setSegundos(0)} 
+          }}
+          onClick={() => setSegundos(0)}
         >
           <span style={{ fontSize: '22px', fontWeight: 'bold' }}>{segundos}</span>
           <span style={{ fontSize: '10px' }}>DESC</span>

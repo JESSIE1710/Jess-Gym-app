@@ -1,4 +1,3 @@
-// --- src/components/Progreso.jsx ---
 import { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 
@@ -6,51 +5,31 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 const COLOR_ACTUAL = '#3b82f6'; 
 const COLOR_ANTERIOR = 'rgba(148, 163, 184, 0.3)'; 
 
-// 👇 NUEVOS ESTILOS PARA LA TABLA DE BORRADO 💎 👇
+// 👇 ESTILOS PARA LA TABLA DE BORRADO 💎
 const estiloTabla = {
     width: '100%',
     fontSize: '14px',
     textAlign: 'center',
     backgroundColor: '#0f172a',
     borderCollapse: 'separate',
-    borderSpacing: '0 8px', // Espaciado entre filas
+    borderSpacing: '0 8px',
     marginTop: '20px',
     borderRadius: '12px',
     padding: '10px'
 };
 
-const estiloFila = {
-    backgroundColor: '#1e293b',
-    borderRadius: '8px',
-    overflow: 'hidden'
-};
+const estiloFila = { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' };
+const estiloCol = { padding: '12px', color: '#e2e8f0' };
+const estiloBotonBorrar = { background: 'none', border: 'none', color: '#ef4444', fontSize: '18px', cursor: 'pointer', padding: '0 5px' };
 
-const estiloCol = {
-    padding: '12px',
-    color: '#e2e8f0'
-};
-
-const estiloBotonBorrar = {
-    background: 'none',
-    border: 'none',
-    color: '#ef4444',
-    fontSize: '18px',
-    cursor: 'pointer',
-    padding: '0 5px'
-};
-// 👆 --- FIN ESTILOS NUEVOS 💎 --- 👆
-
-// 🧠 AYUDANTE DE FECHAS AMABLE (Fix image_3.png Overlaps)
 const formatearFechaGrafico = (fechaIso) => {
     if(!fechaIso) return '';
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    // Parseamos la fecha ISO cruda
     const d = new Date(fechaIso);
-    if(isNaN(d.getTime())) return fechaIso; // Por si acaso
-    return `${d.getDate()} ${meses[d.getMonth()]}`; // e.g., "18 Mar"
+    if(isNaN(d.getTime())) return fechaIso;
+    return `${d.getDate()} ${meses[d.getMonth()]}`;
 };
 
-// ... (Helper obtenerRangoMes sigue igual) ...
 const obtenerRangoMes = (offset = 0) => {
   const d = new Date();
   const dateStr = d.toISOString().split('T')[0];
@@ -69,12 +48,12 @@ export default function Progreso({
   historialPeso, metaPeso, inputPesoActual, setInputPesoActual, usuario, setHistorialPeso,
   ejercicioFuerzaSel, setEjercicioFuerzaSel, ejerciciosConFuerza, datosFuerza,
   datosDonut, datosConsistencia, estilos, formatoFechaSegura, COLORES_DONUT, seriesGuardadas,
-  eliminarRegistroPeso, pesoCorporalData // 💎 Recibimos esto para borrar
+  eliminarRegistroPeso, pesoCorporalData,
+  inputMetaPeso, setInputMetaPeso, inputFechaPeso, setInputFechaPeso, registrarPeso, actualizarMeta
 }) {
   const { start: mesActualStart, end: mesActualEnd } = obtenerRangoMes(0);
   const { start: mesAnteriorStart, end: mesAnteriorEnd } = obtenerRangoMes(-1);
 
-  // ... (Lógica Top 5 sigue igual) ...
   const { top5Fuerza, top5CardioVel } = useMemo(() => {
     if (!seriesGuardadas || seriesGuardadas.length === 0) return { top5Fuerza: [], top5CardioVel: [] };
     const agruparFuerza = {};
@@ -118,26 +97,48 @@ export default function Progreso({
     };
   }, [seriesGuardadas]);
 
-  // 💎 Lógica para obtener el historial de peso ORDENADO Y LIMPIO para la tabla de borrado
   const historialPesoParaTabla = useMemo(() => {
     return (pesoCorporalData || [])
-        .filter(s => s.esObjetivo === false) // Solo pesos reales
-        .sort((a,b) => new Date(b.fecha) - new Date(a.fecha)) // Orden desc: Más nuevos arriba
-        .slice(0, 5); // Mostramos solo los últimos 5 para no saturar
+        .filter(s => s.esObjetivo === false)
+        .sort((a,b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 5);
   }, [pesoCorporalData]);
 
   return (
     <div style={{width:'100%', maxWidth:'1000px'}}>
       
+      {/* 🛡️ PANEL DE CONTROL DE PESO (ARRIBA DEL TODO) 🛡️ */}
+      <div style={{...estilos.panelGrafico, marginBottom: '30px', border: '1px solid #3b82f6'}}>
+        <h3 style={{color: '#60a5fa', margin: '0 0 20px 0', textAlign: 'center'}}>⚖️ Panel de Control de Peso</h3>
+        <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center'}}>
+          
+          {/* Bloque A: Registrar Peso con fecha */}
+          <div style={{flex: 1, minWidth: '280px'}}>
+            <label style={{fontSize: '12px', color: '#94a3b8', fontWeight: 'bold'}}>REGISTRAR PESO (FECHA):</label>
+            <div style={{display: 'flex', gap: '8px', marginTop: '10px'}}>
+              <input type="date" style={{...estilos.inputRegistrar, marginBottom: 0, flex: 1.5, fontSize: '12px'}} value={inputFechaPeso} onChange={e => setInputFechaPeso(e.target.value)} />
+              <input type="number" placeholder="kg" style={{...estilos.inputRegistrar, marginBottom: 0, flex: 1}} value={inputPesoActual} onChange={e => setInputPesoActual(e.target.value)} />
+              <button onClick={registrarPeso} style={{...estilos.botonActivo, padding: '0 15px', border: 'none', borderRadius: '10px', fontWeight: 'bold'}}>OK</button>
+            </div>
+          </div>
+
+          {/* Bloque B: Meta de Peso */}
+          <div style={{flex: 1, minWidth: '280px'}}>
+            <label style={{fontSize: '12px', color: '#94a3b8', fontWeight: 'bold'}}>META ACTUAL: {metaPeso ? `${metaPeso} kg` : '---'}</label>
+            <div style={{display: 'flex', gap: '8px', marginTop: '10px'}}>
+              <input type="number" placeholder="Nueva meta (kg)" style={{...estilos.inputRegistrar, marginBottom: 0, flex: 1}} value={inputMetaPeso} onChange={e => setInputMetaPeso(e.target.value)} />
+              <button onClick={actualizarMeta} style={{...estilos.botonActivo, padding: '0 15px', border: 'none', borderRadius: '10px', fontWeight: 'bold', backgroundColor: '#10b981'}}>FIJAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 1. SECCIÓN: TUS GRÁFICOS HISTÓRICOS */}
       <div style={estilos.gridGraficos}>
-        
-        {/* Gráfico 1: Peso Corporal ( Fix image_3.png Overlaps) */}
         <div style={estilos.panelGrafico}>
           <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>Peso Corporal (kg)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={historialPeso} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              {/* 👇 ¡VACUNA ANTI-OVERLAPS INYECTADA AQUÍ! 👇 */}
               <XAxis dataKey="fecha" tick={{fill:'#64748b', fontSize:'10px'}} tickLine={false} axisLine={false} tickFormatter={formatearFechaGrafico} />
               <YAxis domain={['dataMin - 5', 'dataMax + 5']} tick={{fill:'#64748b'}} axisLine={false} tickLine={false} />
               <Tooltip labelFormatter={formatearFechaGrafico} contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
@@ -146,22 +147,14 @@ export default function Progreso({
           </ResponsiveContainer>
         </div>
 
-        {/* Gráfico 2: Evolución de Fuerza ( Fix image_1.png Sorting) */}
         <div style={estilos.panelGrafico}>
           <h3 style={{margin: '0 0 10px 0', color: '#e2e8f0', textAlign:'center'}}>Récord de Fuerza</h3>
-          <select 
-            style={{...estilos.inputRegistrar, marginBottom: '15px', padding: '8px', fontSize: '14px', width: '100%'}} 
-            value={ejercicioFuerzaSel} 
-            onChange={e => setEjercicioFuerzaSel(e.target.value)}
-          >
+          <select style={{...estilos.inputRegistrar, marginBottom: '15px', padding: '8px', fontSize: '14px', width: '100%'}} value={ejercicioFuerzaSel} onChange={e => setEjercicioFuerzaSel(e.target.value)}>
             <option value="">Selecciona un ejercicio...</option>
-            {ejerciciosConFuerza && ejerciciosConFuerza.map(ej => (
-              <option key={ej} value={ej}>{ej}</option>
-            ))}
+            {ejerciciosConFuerza && ejerciciosConFuerza.map(ej => <option key={ej} value={ej}>{ej}</option>)}
           </select>
           <ResponsiveContainer width="100%" height={170}>
             <AreaChart data={datosFuerza} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              {/* 👇 ¡VACUNA ANTI-OVERLAPS Y SORTING FIX! 👇 */}
               <XAxis dataKey="fecha" tick={{fill:'#64748b', fontSize:'10px'}} tickLine={false} axisLine={false} tickFormatter={formatearFechaGrafico} />
               <YAxis domain={['dataMin - 10', 'dataMax + 10']} tick={{fill:'#64748b'}} axisLine={false} tickLine={false} />
               <Tooltip labelFormatter={formatearFechaGrafico} contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
@@ -170,15 +163,12 @@ export default function Progreso({
           </ResponsiveContainer>
         </div>
 
-        {/* Gráfico 3: Músculos Trabajados */}
         <div style={estilos.panelGrafico}>
           <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>Músculos Trabajados</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={datosDonut} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                {datosDonut.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORES_DONUT[index % COLORES_DONUT.length]} />
-                ))}
+                {datosDonut.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORES_DONUT[index % COLORES_DONUT.length]} />)}
               </Pie>
               <Tooltip contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
               <Legend verticalAlign="bottom" height={36} wrapperStyle={{fontSize:'12px', color:'#94a3b8'}}/>
@@ -186,12 +176,10 @@ export default function Progreso({
           </ResponsiveContainer>
         </div>
 
-        {/* Gráfico 4: Constancia de Entrenamientos */}
         <div style={estilos.panelGrafico}>
-          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>Series Registradas (Últimos 7 días)</h3>
+          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>Series (Últimos 7 días)</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={datosConsistencia} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              {/* 👇 ¡VACUNA ANTI-OVERLAPS TAMBIÉN AQUÍ! 👇 */}
               <XAxis dataKey="f" tick={{fill:'#64748b', fontSize:'10px'}} tickLine={false} axisLine={false} tickFormatter={formatearFechaGrafico} />
               <YAxis tick={{fill:'#64748b'}} axisLine={false} tickLine={false} />
               <Tooltip labelFormatter={formatearFechaGrafico} contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} cursor={{fill: 'rgba(255,255,255,0.05)'}}/>
@@ -199,16 +187,11 @@ export default function Progreso({
             </BarChart>
           </ResponsiveContainer>
         </div>
-
       </div>
 
-      {/* ========================================================= */}
-      {/* 👇💎 SECCIÓN NUEVA: GESTIÓN DE PESO (CRUD) 👇             */}
-      {/* ========================================================= */}
+      {/* GESTIÓN DE PESO (BORRADO) */}
       <div style={{marginTop: '40px', textAlign: 'center'}}>
           <h3 style={{color: '#60a5fa', marginBottom: '15px'}}>Últimos Registros de Peso</h3>
-          <p style={{fontSize: '12px', color: '#64748b', margin: '0 0 10px 0'}}>Aquí puedes borrar un peso introducido por error (el gráfico se arreglará solo). Mostramos los últimos 5.</p>
-          
           {historialPesoParaTabla.length > 0 ? (
               <table style={estiloTabla}>
                   <thead>
@@ -231,52 +214,41 @@ export default function Progreso({
                   </tbody>
               </table>
           ) : (
-              <div style={{color:'#64748b', textAlign:'center', padding:'20px', backgroundColor:'#0f172a', borderRadius:'12px', marginTop: '10px'}}>¡Registra tu primer peso corporal para ver tu historial aquí! ⚖️</div>
+              <div style={{color:'#64748b', textAlign:'center', padding:'20px', backgroundColor:'#0f172a', borderRadius:'12px', marginTop: '10px'}}>¡Registra tu peso para verlo aquí! ⚖️</div>
           )}
       </div>
-      {/* 👆 --- FIN SECCIÓN GESTIÓN PESO --- 👆 */}
 
-      {/* 2. SECCIÓN TUS MÁXIMOS DEL MES */}
-      <h2 style={{color:'#60a5fa', textAlign:'center', marginTop:'40px', marginBottom:'20px'}}>Tus Máximos del Mes (vs. Mes Anterior)</h2>
-      
+      {/* TOP 5 */}
+      <h2 style={{color:'#60a5fa', textAlign:'center', marginTop:'40px', marginBottom:'20px'}}>Tus Máximos del Mes</h2>
       <div style={estilos.gridGraficos}>
         <div style={estilos.panelGrafico}>
-          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>🏆 Top 5: Peso Máximo Levantado</h3>
-          {top5Fuerza.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={top5Fuerza} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
-                <XAxis dataKey="name" tick={{fill:'#94a3b8', fontSize:'10px'}} angle={-45} textAnchor="end" />
-                <YAxis label={{ value: 'kg', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} tick={{fill:'#94a3b8'}} />
-                <Tooltip contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
-                <Legend iconType="circle" wrapperStyle={{fontSize:'12px', color:'#94a3b8'}} />
-                <Bar dataKey="actual" name="Mes Actual (kg)" fill={COLOR_ACTUAL} radius={[5, 5, 0, 0]} />
-                <Bar dataKey="anterior" name="Mes Anterior" fill={COLOR_ANTERIOR} radius={[5, 5, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{color:'#64748b', textAlign:'center', padding:'40px', backgroundColor:'#0f172a', borderRadius:'12px'}}>¡Registra tu primera serie de fuerza! 🏋️‍♀️</div>
-          )}
+          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>🏆 Top 5: Peso Máximo</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={top5Fuerza} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+              <XAxis dataKey="name" tick={{fill:'#94a3b8', fontSize:'10px'}} angle={-45} textAnchor="end" />
+              <YAxis tick={{fill:'#94a3b8'}} />
+              <Tooltip contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
+              <Legend iconType="circle" wrapperStyle={{fontSize:'12px', color:'#94a3b8'}} />
+              <Bar dataKey="actual" name="Mes Actual" fill={COLOR_ACTUAL} radius={[5, 5, 0, 0]} />
+              <Bar dataKey="anterior" name="Anterior" fill={COLOR_ANTERIOR} radius={[5, 5, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         <div style={estilos.panelGrafico}>
-          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>🏆 Top 5: Velocidad Máxima (Caminadora, Bici...)</h3>
-          {top5CardioVel.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={top5CardioVel} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
-                <XAxis dataKey="name" tick={{fill:'#94a3b8', fontSize:'10px'}} angle={-45} textAnchor="end" />
-                <YAxis label={{ value: 'Vel/Nivel', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} tick={{fill:'#94a3b8'}} />
-                <Tooltip contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
-                <Legend iconType="circle" wrapperStyle={{fontSize:'12px', color:'#94a3b8'}} />
-                <Bar dataKey="actual" name="Mes Actual" fill="#8b5cf6" radius={[5, 5, 0, 0]} /> 
-                <Bar dataKey="anterior" name="Mes Anterior" fill={COLOR_ANTERIOR} radius={[5, 5, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div style={{color:'#64748b', textAlign:'center', padding:'40px', backgroundColor:'#0f172a', borderRadius:'12px'}}>¡Registra tu primera sesión de cardio! 🏃‍♀️</div>
-          )}
+          <h3 style={{margin: '0 0 15px 0', color: '#e2e8f0', textAlign:'center'}}>🏆 Top 5: Cardio</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={top5CardioVel} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+              <XAxis dataKey="name" tick={{fill:'#94a3b8', fontSize:'10px'}} angle={-45} textAnchor="end" />
+              <YAxis tick={{fill:'#94a3b8'}} />
+              <Tooltip contentStyle={{backgroundColor:'#1e293b', border:'none', borderRadius:'10px'}} />
+              <Legend iconType="circle" wrapperStyle={{fontSize:'12px', color:'#94a3b8'}} />
+              <Bar dataKey="actual" name="Actual" fill="#8b5cf6" radius={[5, 5, 0, 0]} /> 
+              <Bar dataKey="anterior" name="Anterior" fill={COLOR_ANTERIOR} radius={[5, 5, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
-
     </div>
   );
 }
